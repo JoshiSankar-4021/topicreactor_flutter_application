@@ -357,7 +357,34 @@ class _Register extends State<Register> {
                 ),),),
               ),
               SizedBox(
-                height: 40,
+                height: 10,
+              ),
+              Align(
+                alignment: Alignment.center,
+                child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text("Already had Account?",style: TextStyle(
+                          color: Colors.green,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16
+                      ),),
+                      SizedBox(width: 5),
+                      GestureDetector(
+                        onTap: () {
+                          Navigator.pushNamed(context, '/');
+                        },
+                        child: const Text(
+                          "Login",
+                          style: TextStyle(
+                              color: CupertinoColors.destructiveRed,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 18
+                          ),
+                        ),
+                      ),
+                    ]
+                ),
               )
             ],
           ),

@@ -4,6 +4,9 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:http/http.dart' as http;
 import 'package:topicreactorapp/utils/SessionManager.dart';
 
+import 'Register.dart';
+import 'TopicCreator.dart';
+
 class Topics extends StatefulWidget {
   const Topics({super.key});
 
@@ -14,12 +17,8 @@ class Topics extends StatefulWidget {
 class _Topics extends State<Topics> {
   List topics = [];
   bool isLoading = true;
-
   int userId = 0;
-
-  // Each topic has its own controller
   final Map<int, TextEditingController> commentControllers = {};
-
   @override
   void initState() {
     super.initState();
@@ -41,8 +40,6 @@ class _Topics extends State<Topics> {
     }
     super.dispose();
   }
-
-  // ---------------- FETCH TOPICS ----------------
   Future<void> fetchTopics() async {
     final data = await getAllTopics();
     setState(() {
@@ -54,12 +51,9 @@ class _Topics extends State<Topics> {
       }
     });
   }
-
-  // ---------------- ADD COMMENT ----------------
   Future<void> addComment(int index) async {
     final topic = topics[index];
     final comment = commentControllers[index]!.text.trim();
-
     if (comment.isEmpty) {
       Fluttertoast.showToast(
         msg: "Please enter a comment",
@@ -67,10 +61,8 @@ class _Topics extends State<Topics> {
       );
       return;
     }
-
     const String apiUrl =
-        "http://192.168.29.54:3000/api/Comment?action=createcomment";
-
+        "https://topicreactorbackendnextjs-rvt9.vercel.app/api/Comment?action=createcomment";
     try {
       final response = await http.post(
         Uri.parse(apiUrl),
@@ -88,7 +80,6 @@ class _Topics extends State<Topics> {
           backgroundColor: Colors.green,
         );
 
-        // 🔥 UPDATE UI IMMEDIATELY
         setState(() {
           topic["comments"] ??= [];
           topic["comments"].add(comment);
@@ -107,8 +98,6 @@ class _Topics extends State<Topics> {
       );
     }
   }
-
-  // ---------------- UI ----------------
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -122,7 +111,51 @@ class _Topics extends State<Topics> {
           ),
         ),
         backgroundColor: Colors.green,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.account_circle,
+                color: Colors.white, size: 30),
+            onPressed: () {
+              print(userId);
+              SessionManager.clearSession();
+              print(userId);
+              Navigator.pushNamed(
+                context,"/"
+              );
+            },
+          ),
+        ],
       ),
+
+      floatingActionButton: FloatingActionButton.extended(
+        backgroundColor: Colors.green,
+        icon: const Icon(Icons.add, color: Colors.white),
+        label: const Text("Create Topic", style: TextStyle(color: Colors.white)),
+        onPressed: () async {
+          final result = await showDialog<bool>(
+            context: context,
+            builder: (context) {
+              return Dialog(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: SizedBox(
+                  width: 400,
+                  height: 300,
+                  child: TopicCreator(),
+                ),
+              );
+            },
+          );
+
+          if (result == true) {
+            fetchTopics();
+          }
+        },
+      ),
+
+
+
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
           : topics.isEmpty
@@ -158,7 +191,6 @@ class _Topics extends State<Topics> {
 
                   const SizedBox(height: 10),
 
-                  // -------- COMMENT INPUT --------
                   TextFormField(
                     controller: commentControllers[index],
                     decoration: const InputDecoration(
@@ -177,11 +209,9 @@ class _Topics extends State<Topics> {
                       ),
                     ),
                   ),
-
                   const SizedBox(height: 12),
-
                   Align(
-                    alignment: Alignment.centerRight,
+                    alignment: Alignment.centerLeft,
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.green,
@@ -193,8 +223,6 @@ class _Topics extends State<Topics> {
                       ),
                     ),
                   ),
-
-                  // -------- SHOW COMMENTS --------
                   if (comments.isNotEmpty) ...[
                     const SizedBox(height: 10),
                     const Text(
@@ -208,6 +236,7 @@ class _Topics extends State<Topics> {
                     const SizedBox(height: 5),
                     for (var comment in comments)
                       Container(
+                        width: 300,
                         margin:
                         const EdgeInsets.symmetric(vertical: 4),
                         padding: const EdgeInsets.all(8),
@@ -219,7 +248,10 @@ class _Topics extends State<Topics> {
                         ),
                         child: Text(
                           comment,
-                          style: const TextStyle(fontSize: 16),
+                          style: const TextStyle(fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                            color: Colors.green
+                          ),
                         ),
                       ),
                   ],
@@ -232,19 +264,15 @@ class _Topics extends State<Topics> {
     );
   }
 }
-
-// ---------------- FETCH TOPICS API ----------------
 Future<List> getAllTopics() async {
   List data = [];
   const String apiUrl =
-      "http://192.168.29.54:3000/api/Topic?action=getalltopics";
-
+      "https://topicreactorbackendnextjs-rvt9.vercel.app/api/Topic?action=getalltopics";
   try {
     final response = await http.get(
       Uri.parse(apiUrl),
       headers: {"Content-Type": "application/json"},
     );
-
     if (response.statusCode == 200) {
       final decoded = jsonDecode(response.body);
       if (decoded is List) {

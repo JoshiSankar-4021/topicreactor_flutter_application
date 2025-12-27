@@ -5,7 +5,6 @@ import 'dart:convert';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:topicreactorapp/utils/SessionManager.dart';
-
 import 'Register.dart';
 
 class Login extends StatefulWidget {
@@ -27,13 +26,14 @@ class _LoginScreenState extends State<Login> {
     return Scaffold(
       appBar: AppBar(
         title: const Text(
-          "Login Screen",
+          "Topic Reactor",
           style: TextStyle(
             color: Colors.white,
             fontSize: 30,
             fontWeight: FontWeight.bold,
           ),
         ),
+        centerTitle: true,
         backgroundColor: Colors.green,
       ),
       body: Padding(
@@ -103,18 +103,33 @@ class _LoginScreenState extends State<Login> {
                   style: TextStyle(color: Colors.white),
                 ),
               ),
-              GestureDetector(
-                onTap: () {
-                  Navigator.pushNamed(context, '/register');
-                },
-                child: const Text(
-                  "Register",
-                  style: TextStyle(
-                    color: CupertinoColors.destructiveRed,
-                    fontWeight: FontWeight.bold,
-                  ),
+              Align(
+                alignment: Alignment.center,
+                child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text("Dosen't have Account?",style: TextStyle(
+                        color: Colors.green,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16
+                      ),),
+                      SizedBox(width: 5),
+                      GestureDetector(
+                        onTap: () {
+                          Navigator.pushNamed(context, '/register');
+                        },
+                        child: const Text(
+                          "Register",
+                          style: TextStyle(
+                            color: CupertinoColors.destructiveRed,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 18
+                          ),
+                        ),
+                      ),
+                    ]
                 ),
-              ),
+              )
             ],
           ),
         ),
@@ -122,10 +137,9 @@ class _LoginScreenState extends State<Login> {
     );
   }
 
-  // 🔐 LOGIN API + SHARED PREFERENCES
   Future<void> submitLogin(String mail, String password) async {
     const String apiUrl =
-        "http://192.168.29.54:3000/api/User?action=login";
+        "https://topicreactorbackendnextjs-rvt9.vercel.app/api/User?action=login";
     try {
       final response = await http.post(
         Uri.parse(apiUrl),

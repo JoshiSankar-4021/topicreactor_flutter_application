@@ -40,17 +40,6 @@ class _TopicCreator extends State<TopicCreator> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          "CREATE TOPIC",
-          style: TextStyle(
-            fontSize: 26,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
-        ),
-        backgroundColor: Colors.green,
-      ),
       body: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -138,9 +127,7 @@ class _TopicCreator extends State<TopicCreator> {
                     onPressed: () {
                       topicName=_topicNameController.text;
                       reason=_reasonController.text;
-                      print("topic name:$topicName");
-                      print("reason: $reason");
-                      print("userid:$userId");
+
                       CreateTopic(topicName,reason,userId);
                     }, child: Text('Create Topic',
                   style: TextStyle(
@@ -158,7 +145,7 @@ class _TopicCreator extends State<TopicCreator> {
     );
   }
   Future<void>CreateTopic(String topicName,String reason,int userId)async {
-    const String apiUrl="http://192.168.29.54:3000/api/Topic?action=createtopic";
+    const String apiUrl="https://topicreactorbackendnextjs-rvt9.vercel.app/api/Topic?action=createtopic";
     try{
       final response = await http.post(
           Uri.parse(apiUrl),
@@ -169,11 +156,12 @@ class _TopicCreator extends State<TopicCreator> {
             "reason":reason,
             "createdby":userId
       }));
-      if(response.statusCode==200){
+      if (response.statusCode == 200) {
         Fluttertoast.showToast(
-          msg: "Topic Created Sucessfully",
+          msg: "Topic Created Successfully",
           backgroundColor: Colors.green,
         );
+        Navigator.pop(context, true);
       }else{
         Fluttertoast.showToast(
           msg: "Topic Not Created",
