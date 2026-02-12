@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
@@ -6,6 +7,7 @@ import 'package:topicreactorapp/utils/SessionManager.dart';
 
 import 'Register.dart';
 import 'TopicCreator.dart';
+import 'SideNavbar.dart';
 
 class Topics extends StatefulWidget {
   const Topics({super.key});
@@ -14,14 +16,16 @@ class Topics extends StatefulWidget {
   State<Topics> createState() => _Topics();
 }
 
-class _Topics extends State<Topics> {
+class _Topics extends State<Topics> with WidgetsBindingObserver {
   List topics = [];
   bool isLoading = true;
   int userId = 0;
   final Map<int, TextEditingController> commentControllers = {};
+
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     fetchTopics();
     loadUserId();
   }
@@ -34,26 +38,43 @@ class _Topics extends State<Topics> {
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      fetchTopics();
+    }
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     for (var controller in commentControllers.values) {
       controller.dispose();
     }
     super.dispose();
   }
+
   Future<void> fetchTopics() async {
+    setState(() {
+      isLoading = true;
+    });
+
     final data = await getAllTopics();
+
     setState(() {
       topics = data;
       isLoading = false;
 
+      commentControllers.clear();
       for (int i = 0; i < topics.length; i++) {
         commentControllers[i] = TextEditingController();
       }
     });
   }
+
   Future<void> addComment(int index) async {
     final topic = topics[index];
     final comment = commentControllers[index]!.text.trim();
+
     if (comment.isEmpty) {
       Fluttertoast.showToast(
         msg: "Please enter a comment",
@@ -61,6 +82,7 @@ class _Topics extends State<Topics> {
       );
       return;
     }
+
     const String apiUrl =
         "https://topicreactorbackendnextjs-rvt9.vercel.app/api/Comment?action=createcomment";
     try {
@@ -98,6 +120,7 @@ class _Topics extends State<Topics> {
       );
     }
   }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -115,22 +138,34 @@ class _Topics extends State<Topics> {
           IconButton(
             icon: const Icon(Icons.account_circle,
                 color: Colors.white, size: 30),
-            onPressed: () {
-              print(userId);
-              SessionManager.clearSession();
-              print(userId);
+            onPressed: () async {
               Navigator.pushNamed(
-                context,"/"
+                context,
+                "/profile",
               );
             },
           ),
         ],
       ),
-
+        drawer: SideNavBar(),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       floatingActionButton: FloatingActionButton.extended(
         backgroundColor: Colors.green,
-        icon: const Icon(Icons.add, color: Colors.white),
-        label: const Text("Create Topic", style: TextStyle(color: Colors.white)),
+        elevation: 30,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20)
+        ),
+        icon: Image.asset(
+          'assets/images/topicreactor_only_logo.png',
+          width: 50,
+          height: 50,
+        ),
+
+        label: const Text(
+          "",
+          style: TextStyle(color: Colors.white),
+        ),
+
         onPressed: () async {
           final result = await showDialog<bool>(
             context: context,
@@ -139,7 +174,7 @@ class _Topics extends State<Topics> {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: SizedBox(
+                child: const SizedBox(
                   width: 400,
                   height: 300,
                   child: TopicCreator(),
@@ -155,64 +190,65 @@ class _Topics extends State<Topics> {
       ),
 
 
-
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
-          : topics.isEmpty
-          ? const Center(child: Text("No topics available"))
-          : ListView.builder(
-        padding: const EdgeInsets.all(10),
-        itemCount: topics.length,
-        itemBuilder: (context, index) {
-          final topic = topics[index];
-          final comments = topic["comments"] ?? [];
+          : RefreshIndicator(
+        onRefresh: fetchTopics,
+        child: topics.isEmpty
+            ? ListView(
+          children: const [
+            SizedBox(height: 200),
+            Center(child: Text("No topics available")),
+          ],
+        )
+            : ListView.builder(
+          padding: const EdgeInsets.all(10),
+          itemCount: topics.length,
+          itemBuilder: (context, index) {
+            final topic = topics[index];
+            final comments = topic["comments"] ?? [];
 
-          return Card(
-            margin: const EdgeInsets.symmetric(vertical: 8),
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    title: Text(
-                      topic["topic"] ?? "No Title",
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 24,
+            return Card(
+              margin: const EdgeInsets.symmetric(vertical: 8),
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(
+                        topic["topic"] ?? "No Title",
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 24,
+                        ),
+                      ),
+                      subtitle: Text(
+                        topic["reason"] ?? "No Reason",
+                        style: const TextStyle(fontSize: 18),
                       ),
                     ),
-                    subtitle: Text(
-                      topic["reason"] ?? "No Reason",
-                      style: const TextStyle(fontSize: 18),
-                    ),
-                  ),
+                    const SizedBox(height: 10),
+                    TextFormField(
+                      controller: commentControllers[index],
+                      decoration: const InputDecoration(
+                        labelText: "Add a comment",
+                        labelStyle: TextStyle(color: Colors.green,fontSize: 15,fontWeight: FontWeight.bold),
+                        prefixIcon: Icon(Icons.comment_outlined,color:Colors.green),
+                        border: OutlineInputBorder(),
+                        enabledBorder: OutlineInputBorder(
+                          borderSide:
+                          BorderSide(color: Colors.green),
+                        ),
+                        focusedBorder: OutlineInputBorder(
 
-                  const SizedBox(height: 10),
-
-                  TextFormField(
-                    controller: commentControllers[index],
-                    decoration: const InputDecoration(
-                      labelText: "Add a comment",
-                      labelStyle: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.green,
-                      ),
-                      border: OutlineInputBorder(),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius:
-                        BorderRadius.all(Radius.circular(10)),
-                        borderSide:
-                        BorderSide(color: Colors.green),
+                          borderSide: BorderSide(width: 2,color: Colors.green)
+                        )
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 12),
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: ElevatedButton(
+                    const SizedBox(height: 12),
+                    ElevatedButton(
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.green,
                       ),
@@ -222,69 +258,65 @@ class _Topics extends State<Topics> {
                         style: TextStyle(color: Colors.white),
                       ),
                     ),
-                  ),
-                  if (comments.isNotEmpty) ...[
-                    const SizedBox(height: 10),
-                    const Text(
-                      "Comments:",
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                        color: Colors.green,
-                      ),
-                    ),
-                    const SizedBox(height: 5),
-                    for (var comment in comments)
-                      Container(
-                        width: 300,
-                        margin:
-                        const EdgeInsets.symmetric(vertical: 4),
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          border: Border.all(
-                              color: Colors.green, width: 2),
-                          borderRadius: BorderRadius.circular(8),
-                          color: Colors.green[50],
-                        ),
-                        child: Text(
-                          comment,
-                          style: const TextStyle(fontSize: 20,
+                    if (comments.isNotEmpty) ...[
+                      const SizedBox(height: 10),
+                      const Text(
+                        "Comments:",
+                        style: TextStyle(
                           fontWeight: FontWeight.bold,
-                            color: Colors.green
+                          fontSize: 16,
+                          color: Colors.green,
+                        ),
+                      ),
+                      const SizedBox(height: 5),
+                      for (var comment in comments)
+                        Container(
+                          width: double.infinity,
+                          margin: const EdgeInsets.symmetric(
+                              vertical: 4),
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            border: Border.all(
+                                color: Colors.green, width: 2),
+                            borderRadius:
+                            BorderRadius.circular(8),
+                            color: Colors.green[50],
+                          ),
+                          child: Text(
+                            comment,
+                            style: const TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.green,
+                            ),
                           ),
                         ),
-                      ),
+                    ],
                   ],
-                ],
+                ),
               ),
-            ),
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }
 }
+
 Future<List> getAllTopics() async {
   List data = [];
   const String apiUrl =
       "https://topicreactorbackendnextjs-rvt9.vercel.app/api/Topic?action=getalltopics";
+
   try {
     final response = await http.get(
       Uri.parse(apiUrl),
       headers: {"Content-Type": "application/json"},
     );
+
     if (response.statusCode == 200) {
       final decoded = jsonDecode(response.body);
-      if (decoded is List) {
-        data = decoded;
-      } else if (decoded is Map && decoded['topics'] != null) {
-        data = decoded['topics'];
-      }
-    } else {
-      Fluttertoast.showToast(
-        msg: "Failed to fetch topics",
-        backgroundColor: Colors.red,
-      );
+      data = decoded is Map ? decoded['topics'] ?? [] : decoded;
     }
   } catch (error) {
     Fluttertoast.showToast(

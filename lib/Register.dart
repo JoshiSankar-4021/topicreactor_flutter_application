@@ -1,433 +1,322 @@
 import 'dart:convert';
-
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:http/http.dart' as http;
+import 'package:topicreactorapp/utils/SessionManager.dart';
 
 class Register extends StatefulWidget {
-  const Register({super.key});
+  final bool isUpdate;
+  const Register({super.key, this.isUpdate = false});
 
   @override
   State<Register> createState() => _Register();
 }
 
 class _Register extends State<Register> {
+  final _firstnameController = TextEditingController();
+  final _lastnameController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _rePasswordController = TextEditingController();
+  final _addressController = TextEditingController();
+  final _phoneController = TextEditingController();
 
-  final TextEditingController _firstnameController = TextEditingController();
-  final TextEditingController _lastnameController = TextEditingController();
-  final TextEditingController _emailController = TextEditingController();
-  final TextEditingController _passwordController = TextEditingController();
-  final TextEditingController _reTypePasswordController = TextEditingController();
-  final TextEditingController _addressController = TextEditingController();
-  final TextEditingController _phoneController = TextEditingController();
+  String educationValue = "0";
+  String gender = "";
+  int userId = 0;
 
-  String firstName="";
-  String lastName="";
-  String email="";
-  String password="";
-  String reTypePassword="";
-  String address="";
-  String phone="";
-  String educationvalue="0";
-  String gender="";
+  @override
+  void initState() {
+    super.initState();
+    if (widget.isUpdate) {
+      loadProfile();
+    }
+  }
 
+  // ================= LOAD PROFILE =================
+  Future<void> loadProfile() async {
+    userId = await SessionManager.getUserId();
 
+    final url =
+        "https://topicreactorbackendnextjs-rvt9.vercel.app/api/User?action=getprofile&userid=$userId";
+
+    try {
+      final response = await http.get(Uri.parse(url));
+
+      if (response.statusCode == 200) {
+        final json = jsonDecode(response.body);
+        final data = json['data'];
+
+        setState(() {
+          _firstnameController.text = data['firstname'] ?? '';
+          _lastnameController.text = data['lastname'] ?? '';
+          _emailController.text = data['email'] ?? '';
+          _addressController.text = data['address'] ?? '';
+          _phoneController.text = data['phone'] ?? '';
+          educationValue = data['education'].toString();
+          gender = data['gender'] ?? '';
+        });
+      } else {
+        Fluttertoast.showToast(
+          msg: "Failed to load profile",
+          backgroundColor: Colors.red,
+        );
+      }
+    } catch (e) {
+      Fluttertoast.showToast(
+        msg: "Error loading profile",
+        backgroundColor: Colors.red,
+      );
+    }
+  }
+
+  // ================= UI =================
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          "Register",
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
+        title: Text(
+          widget.isUpdate ? "Profile" : "Register",
+          style: const TextStyle(color: Colors.white, fontSize: 26),
         ),
-        centerTitle: true,
         backgroundColor: Colors.green,
+        centerTitle: true,
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(10),
-        child: Form(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Align(
-                alignment: Alignment.center,
-                child: Text(
-                  "Topic Reactor",
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 30,
-                    color: Colors.green
-                  ),
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          children: [
+            _field("First Name", Icons.person, _firstnameController),
+            _field("Last Name", Icons.person, _lastnameController),
+            _field(
+              "Email",
+              Icons.email,
+              _emailController,
+            ),
+
+            if (!widget.isUpdate)
+              _password("Password", _passwordController),
+
+            if (!widget.isUpdate)
+              _password("Re-Type Password", _rePasswordController),
+
+            _address(),
+            _education(),
+            _field("Phone", Icons.phone, _phoneController,
+                keyboardType: TextInputType.phone),
+
+            _gender(),
+            const SizedBox(height: 20),
+
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
                 ),
-              ),
-              Align(
-                alignment: Alignment.center,
+                onPressed:
+                widget.isUpdate ? updateProfile : registerUser,
                 child: Text(
-                  "Registration",
-                  style: TextStyle(
+                  widget.isUpdate ? "Update" : "Register",
+                  style: const TextStyle(
+                      fontSize: 20,
                       fontWeight: FontWeight.bold,
-                      fontSize: 25,
-                      color: Colors.green
-                  ),
+                      color: Colors.white),
                 ),
               ),
-              TextFormField(
-                controller: _firstnameController,
-                decoration: const InputDecoration(
-                  labelText: 'First Name',
-                  labelStyle: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.green,
-                    fontSize: 20
-                  ),
-                  hintText: 'Enter Your First Name',
-                  border: OutlineInputBorder(),
-                  enabledBorder: OutlineInputBorder(
-                    borderSide: BorderSide(
-                      color: Colors.green,
-                      width: 2
-                    )
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderSide: BorderSide(
-                      color: Colors.green,
-                      width:4
-                    )
-                  )
-                ),
-              ),
-              const SizedBox(height: 20),
-              TextFormField(
-                controller: _lastnameController,
-                decoration: const InputDecoration(
-                  labelText: 'Last Name', labelStyle: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.green,
-                    fontSize: 20
-                ),
-                  hintText: 'Enter Your Last Name',
-                    border: OutlineInputBorder(),
-                    enabledBorder: OutlineInputBorder(
-                        borderSide: BorderSide(
-                            color: Colors.green,
-                            width: 2
-                        )
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                        borderSide: BorderSide(
-                            color: Colors.green,
-                            width:4
-                        )
-                    )
-                ),
-              ),
-              const SizedBox(height: 20),
-              TextFormField(
-                controller: _emailController,
-                decoration: const InputDecoration(
-                  labelText: 'E-mail',
-                    labelStyle: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.green,
-                        fontSize: 20
-                    ),
-                  hintText: 'Enter Your E-mail',
-                    border: OutlineInputBorder(),
-                    enabledBorder: OutlineInputBorder(
-                        borderSide: BorderSide(
-                            color: Colors.green,
-                            width: 2
-                        )
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                        borderSide: BorderSide(
-                            color: Colors.green,
-                            width:4
-                        )
-                    )
-                ),
-              ),
-              const SizedBox(height: 20),
-              TextFormField(
-                controller: _passwordController,
-                decoration: const InputDecoration(
-                  labelText: 'Password',
-                    labelStyle: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.green,
-                        fontSize: 20
-                    ),
-                  hintText: "Enter Your Password",
-                    border: OutlineInputBorder(),
-                    enabledBorder: OutlineInputBorder(
-                        borderSide: BorderSide(
-                            color: Colors.green,
-                            width: 2
-                        )
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                        borderSide: BorderSide(
-                            color: Colors.green,
-                            width:4
-                        )
-                    )
-                ),
-                obscureText: true,
-              ),
-              const SizedBox(height: 20),
-              TextFormField(
-                controller: _reTypePasswordController,
-                decoration: const InputDecoration(
-                  labelText: 'Re-Type Password',
-                    labelStyle: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.green,
-                        fontSize: 20
-                    ),
-                  hintText: "Enter Your Password",
-                    border: OutlineInputBorder(),
-                    enabledBorder: OutlineInputBorder(
-                        borderSide: BorderSide(
-                            color: Colors.green,
-                            width: 2
-                        )
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                        borderSide: BorderSide(
-                            color: Colors.green,
-                            width:4
-                        )
-                    )
-                ),
-                obscureText: true,
-              ),
-              const SizedBox(height: 20),
-              TextFormField(
-                controller: _addressController,
-                keyboardType: TextInputType.multiline,
-                maxLines: 4,
-                maxLength: 500,
-                decoration: const InputDecoration(
-                  labelText: 'Address', labelStyle: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.green,
-                    fontSize: 20
-                ),
-                  hintText: 'Enter Your Address',
-                    border: OutlineInputBorder(),
-                    enabledBorder: OutlineInputBorder(
-                        borderSide: BorderSide(
-                            color: Colors.green,
-                            width: 2
-                        )
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                        borderSide: BorderSide(
-                            color: Colors.green,
-                            width:4
-                        )
-                    )
-                ),
-              ),
-              const SizedBox(height: 20),
-              DropdownButtonFormField<String>(
-                value: educationvalue,
-                decoration: const InputDecoration(
-                  labelText: "Education",
-                    labelStyle: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.green,
-                    fontSize: 20
-                ),
-                    border: OutlineInputBorder(),
-                    enabledBorder: OutlineInputBorder(
-                        borderSide: BorderSide(
-                            color: Colors.green,
-                            width: 2
-                        )
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                        borderSide: BorderSide(
-                            color: Colors.green,
-                            width:4
-                        )
-                    )
-                ),
-                items: const [
-                  DropdownMenuItem(value: "0", child: Text("Select")),
-                  DropdownMenuItem(value: "1", child: Text("High School")),
-                  DropdownMenuItem(value: "2", child: Text("Bachelors")),
-                  DropdownMenuItem(value: "3", child: Text("Masters")),
-                  DropdownMenuItem(value: "4", child: Text("PH.D")),
-                ],
-                onChanged: (value) {
-                  setState(() => educationvalue = value!);
-                },
-              ),
-              const SizedBox(height: 20),
-              TextFormField(
-                controller: _phoneController,
-                decoration: const InputDecoration(
-                  labelText: 'Phone Number',
-                  hintText: 'Enter Your Phone Number',
-                    border: OutlineInputBorder(),
-                    enabledBorder: OutlineInputBorder(
-                        borderSide: BorderSide(
-                            color: Colors.green,
-                            width: 2
-                        )
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                        borderSide: BorderSide(
-                            color: Colors.green,
-                            width:4
-                        )
-                    )
-                ),
-                keyboardType: TextInputType.phone,
-              ),
-              const SizedBox(height: 20),
-              const Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  "Gender",
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 20,
-                    color: Colors.green
-                  ),
-                ),
-              ),
-              Row(
-                children: [
-                  Radio<String>(
-                    value: "M",
-                    groupValue: gender,
-                    activeColor: Colors.green,
-                    onChanged: (value) {
-                      setState(() {
-                        gender = value!;
-                      });
-                    },
-                  ),
-                  const Text("Male",style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                    color:Colors.black
-                  ),),
-                  Radio<String>(
-                    value: "F",
-                    groupValue: gender,
-                    activeColor: Colors.green,
-                    onChanged: (value) {
-                      setState(() {
-                        gender = value!;
-                      });
-                    },
-                  ),
-                  const Text("Female",style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                    color:Colors.black
-                  ),),
-                ],
-              ),
-              SizedBox(
-                width: double.infinity,
-                child:ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
-                  ),
-                  onPressed: () {
-                    firstName=_firstnameController.text;
-                    lastName=_lastnameController.text;
-                    email=_emailController.text;
-                    password=_passwordController.text;
-                    address=_addressController.text;
-                    phone=_phoneController.text;
-                    submitRegister(firstName,lastName,email,password,address,educationvalue,phone,gender);
-                  }, child: Text('Register',style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color:Colors.white,
-                    fontSize: 20
-                ),),),
-              ),
-              SizedBox(
-                height: 10,
-              ),
-              Align(
-                alignment: Alignment.center,
-                child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text("Already had Account?",style: TextStyle(
-                          color: Colors.green,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16
-                      ),),
-                      SizedBox(width: 5),
-                      GestureDetector(
-                        onTap: () {
-                          Navigator.pushNamed(context, '/');
-                        },
-                        child: const Text(
-                          "Login",
-                          style: TextStyle(
-                              color: CupertinoColors.destructiveRed,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 18
-                          ),
-                        ),
-                      ),
-                    ]
-                ),
-              )
-            ],
-          ),
+            ),
+
+            if (!widget.isUpdate) _loginLink(),
+          ],
         ),
       ),
     );
   }
-  Future<void> submitRegister(String firstName, String lastName,
-      String email, String password, String address, String educationvalue, String phone, String gender) async {
 
-    const String apiUrl="http://192.168.29.54:3000/api/User?action=registeruser";
-    try{
-      final response = await http.post(
-          Uri.parse(apiUrl),
-          headers:{
-            "Content-Type":"application/json",
-          },body:jsonEncode({
-        "firstname": firstName,
-        "lastname": lastName,
-        "email": email,
-        "password": password,
-        "address": address,
-        "education": educationvalue,
-        "phone": phone,
-        "gender": gender
-      }));
-      if(response.statusCode==200){
+  // ================= HELPERS =================
+  Widget _field(String label, IconData icon, TextEditingController c,
+      {bool enabled = true,
+        TextInputType keyboardType = TextInputType.text}) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 20),
+      child: TextFormField(
+        controller: c,
+        enabled: enabled,
+        keyboardType: keyboardType,
+        decoration: _decoration(label, icon),
+      ),
+    );
+  }
+
+  Widget _password(String label, TextEditingController c) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 20),
+      child: TextFormField(
+        controller: c,
+        obscureText: true,
+        decoration: _decoration(label, Icons.lock),
+      ),
+    );
+  }
+
+  Widget _address() {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 20),
+      child: TextFormField(
+        controller: _addressController,
+        maxLines: 4,
+        decoration: _decoration("Address", Icons.location_on),
+      ),
+    );
+  }
+
+  Widget _education() {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 20),
+      child: DropdownButtonFormField<String>(
+        value: educationValue,
+        decoration: _decoration("Education", Icons.school),
+        items: const [
+          DropdownMenuItem(value: "0", child: Text("Select")),
+          DropdownMenuItem(value: "1", child: Text("High School")),
+          DropdownMenuItem(value: "2", child: Text("Bachelors")),
+          DropdownMenuItem(value: "3", child: Text("Masters")),
+          DropdownMenuItem(value: "4", child: Text("Ph.D")),
+        ],
+        onChanged: (v) => setState(() => educationValue = v!),
+      ),
+    );
+  }
+
+  Widget _gender() {
+    return Row(
+      children: [
+        Radio(
+          value: "M",
+          groupValue: gender,
+          activeColor: Colors.green,
+          onChanged: (v) => setState(() => gender = v!),
+        ),
+        const Text("Male"),
+        Radio(
+          value: "F",
+          groupValue: gender,
+          activeColor: Colors.green,
+          onChanged: (v) => setState(() => gender = v!),
+        ),
+        const Text("Female"),
+      ],
+    );
+  }
+
+  Widget _loginLink() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        const Text("Already have an account? "),
+        GestureDetector(
+          onTap: () => Navigator.pushNamed(context, "/"),
+          child: const Text(
+            "Login",
+            style: TextStyle(
+                color: CupertinoColors.destructiveRed,
+                fontWeight: FontWeight.bold),
+          ),
+        ),
+      ],
+    );
+  }
+
+  InputDecoration _decoration(String label, IconData icon) {
+    return InputDecoration(
+      labelText: label,
+      prefixIcon: Icon(icon, color: Colors.green),
+      border: const OutlineInputBorder(),
+      enabledBorder: const OutlineInputBorder(
+        borderSide: BorderSide(color: Colors.green, width: 2),
+      ),
+      focusedBorder: const OutlineInputBorder(
+        borderSide: BorderSide(color: Colors.green, width: 4),
+      ),
+    );
+  }
+
+  // ================= API =================
+  Future<void> registerUser() async {
+    const api =
+        "https://topicreactorbackendnextjs-rvt9.vercel.app/api/User?action=registeruser";
+
+    final response = await http.post(
+      Uri.parse(api),
+      headers: {"Content-Type": "application/json"},
+      body: jsonEncode({
+        "firstname": _firstnameController.text,
+        "lastname": _lastnameController.text,
+        "email": _emailController.text,
+        "password": _passwordController.text,
+        "address": _addressController.text,
+        "education": educationValue,
+        "phone": _phoneController.text,
+        "gender": gender,
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      Fluttertoast.showToast(
+          msg: "Registered Successfully", backgroundColor: Colors.green);
+      Navigator.pushNamed(context, "/");
+    } else {
+      Fluttertoast.showToast(
+          msg: "Registration Failed", backgroundColor: Colors.red);
+    }
+  }
+
+  Future<void> updateProfile() async {
+    userId = await SessionManager.getUserId();
+
+    final String api =
+        "https://topicreactorbackendnextjs-rvt9.vercel.app/api/User?action=update_profile&userid=$userId";
+
+    try {
+      final response = await http.put(
+        Uri.parse(api),
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({
+          "firstname": _firstnameController.text.trim(),
+          "lastname": _lastnameController.text.trim(),
+          "email": _emailController.text.trim(),
+          "password": _passwordController.text.trim(),
+          "address": _addressController.text.trim(),
+          "education": educationValue,
+          "phone": _phoneController.text.trim(),
+          "gender": gender, // must be "M" or "F"
+        }),
+      );
+
+      if (response.statusCode == 200) {
         Fluttertoast.showToast(
-          msg: "User Created Sucessfully",
+          msg: "Profile Updated Successfully",
           backgroundColor: Colors.green,
+          textColor: Colors.white,
         );
-      }else{
+
+        Navigator.pop(context, true);
+      } else {
         Fluttertoast.showToast(
-          msg: "User Creation Failde",
+          msg: "Update Failed",
           backgroundColor: Colors.red,
+          textColor: Colors.white,
         );
       }
-    }catch(error){
-      print("Error: $error");
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error: $error")),
+    } catch (e) {
+      Fluttertoast.showToast(
+        msg: "Something went wrong",
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
       );
+      debugPrint("Update profile error: $e");
     }
   }
 }
-

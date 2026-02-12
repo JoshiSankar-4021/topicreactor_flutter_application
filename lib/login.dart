@@ -3,9 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:fluttertoast/fluttertoast.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:topicreactorapp/utils/SessionManager.dart';
-import 'Register.dart';
 
 class Login extends StatefulWidget {
   const Login({super.key});
@@ -20,117 +18,131 @@ class _LoginScreenState extends State<Login> {
 
   String email = "";
   String password = "";
+  bool visibility=true;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          "Topic Reactor",
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 30,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        centerTitle: true,
-        backgroundColor: Colors.green,
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Form(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Center(
-                child: Text(
-                  "Login",
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 40,
-                    color: Colors.green,
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Form(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                const SizedBox(height: 50),
+
+                // Logo at top
+                Image.asset(
+                  'assets/images/topicreactor.png',
+                  width: 300,
+                  height: 300,
+                ),
+                const SizedBox(height: 30),
+
+                TextFormField(
+                  controller: _emailController,
+                  decoration: const InputDecoration(
+                    labelText: "Email",
+                    prefixIcon: Icon(Icons.email_outlined,color: Colors.green,),
+                    labelStyle: TextStyle(
+                      color: Colors.green,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: Colors.green, width: 2),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: Colors.green, width: 4),
+                    ),
                   ),
                 ),
-              ),
-              TextFormField(
-                controller: _emailController,
-                decoration: const InputDecoration(
-                  labelText: "Email",
-                  labelStyle: TextStyle(
-                    color: Colors.green,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: Colors.green, width: 2),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: Colors.green, width: 4),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
-              TextFormField(
-                controller: _passwordController,
-                obscureText: true,
-                decoration: const InputDecoration(
-                  labelText: "Password",
-                  labelStyle: TextStyle(
-                    color: Colors.green,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: Colors.green, width: 2),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: Colors.green, width: 4),
+                const SizedBox(height: 20),
+
+                TextFormField(
+                  controller: _passwordController,
+                  obscureText: visibility,
+                  decoration: InputDecoration(
+                    prefixIcon: const Icon(Icons.password,color: Colors.green),
+                    suffixIcon: IconButton(onPressed:(){
+                     if(visibility){
+                       setState(() {
+                         visibility=false;
+                       });
+                     }else{
+                       setState(() {
+                         visibility=true;
+                       });
+                     }
+                    }, icon: visibility?Icon(Icons.visibility_off,color: Colors.green):Icon(Icons.visibility,color: Colors.green)),
+                    labelText: "Password",
+                    labelStyle: const TextStyle(
+                      color: Colors.green,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    enabledBorder: const OutlineInputBorder(
+                      borderSide: BorderSide(color: Colors.green, width: 2),
+                    ),
+                    focusedBorder: const OutlineInputBorder(
+                      borderSide: BorderSide(color: Colors.green, width: 4),
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 10),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green,
+                const SizedBox(height: 20),
+
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                      padding: const EdgeInsets.symmetric(vertical: 15),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    onPressed: () {
+                      email = _emailController.text.trim();
+                      password = _passwordController.text.trim();
+                      submitLogin(email, password);
+                    },
+                    child: const Text(
+                      "Login",
+                      style: TextStyle(color: Colors.white, fontSize: 18),
+                    ),
+                  ),
                 ),
-                onPressed: () {
-                  email = _emailController.text.trim();
-                  password = _passwordController.text.trim();
-                  submitLogin(email, password);
-                },
-                child: const Text(
-                  "Login",
-                  style: TextStyle(color: Colors.white),
-                ),
-              ),
-              Align(
-                alignment: Alignment.center,
-                child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text("Dosen't have Account?",style: TextStyle(
-                        color: Colors.green,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16
-                      ),),
-                      SizedBox(width: 5),
-                      GestureDetector(
-                        onTap: () {
-                          Navigator.pushNamed(context, '/register');
-                        },
-                        child: const Text(
-                          "Register",
-                          style: TextStyle(
+                const SizedBox(height: 20),
+
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Text(
+                      "Doesn't have an Account?",
+                      style: TextStyle(
+                          color: Colors.green,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16),
+                    ),
+                    const SizedBox(width: 5),
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.pushNamed(context, '/register');
+                      },
+                      child: const Text(
+                        "Register",
+                        style: TextStyle(
                             color: CupertinoColors.destructiveRed,
                             fontWeight: FontWeight.bold,
-                            fontSize: 18
-                          ),
-                        ),
+                            fontSize: 18),
                       ),
-                    ]
+                    ),
+                  ],
                 ),
-              )
-            ],
+                const SizedBox(height: 30),
+              ],
+            ),
           ),
         ),
       ),
@@ -162,7 +174,7 @@ class _LoginScreenState extends State<Login> {
             textColor: Colors.white,
           );
           Navigator.pushReplacementNamed(context, '/topics');
-        }else {
+        } else {
           Fluttertoast.showToast(
             msg: "Invalid credentials",
             backgroundColor: Colors.red,

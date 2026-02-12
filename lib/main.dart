@@ -4,33 +4,31 @@ import 'homescreen.dart';
 import 'login.dart';
 import 'Register.dart';
 import 'Topics.dart';
+import 'TopicListScreen.dart';
+import 'utils/SessionManager.dart';
+
 void main() {
   runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
-  
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
+      title: 'Topic Reactor',
       debugShowCheckedModeBanner: false,
-      initialRoute:'/',
+      initialRoute: '/',
       routes: {
-        '/':(context)=>Login(),
-        '/home':(context)=>HomeScreen(),
-        '/register':(context)=>Register(),
-        '/topic creator':(context)=>TopicCreator(),
-        '/topics':(context)=>Topics()
+        '/': (context) => const Login(),
+        '/home': (context) => const HomeScreen(),
+        '/register': (context) => const Register(isUpdate: false), // fixed
+        '/topiccreator': (context) => const TopicCreator(),
+        '/topics': (context) => const Topics(),
+        '/profile': (context) => const Register(isUpdate: true), // reuse register as profile update
+        '/mytopics':(context) => const TopicList()
       },
     );
   }
 }
-
-
-
-
-
-
-
